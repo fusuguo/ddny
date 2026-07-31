@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import ImageUploader from './components/ImageUploader';
 import ImageCanvas from './components/ImageCanvas';
 import PerlerColorPicker from './components/PerlerColorPicker';
+import RenderSettings from './components/RenderSettings';
 import ControlPanel from './components/ControlPanel';
 import ProgressOverlay from './components/ProgressOverlay';
 import { type RGB, COLOR_THRESHOLD } from './utils/colorMatch';
@@ -26,6 +27,8 @@ export default function App() {
   const [processing, setProcessing] = useState(false);
   /** 颜色匹配阈值（默认 20，可滑动调节） */
   const [threshold, setThreshold] = useState(COLOR_THRESHOLD);
+  /** 背景亮度百分比（10~90，默认 75） */
+  const [dimPercent, setDimPercent] = useState(75);
   /** 是否正在上传/加载图纸（暂停态） */
   const [uploading, setUploading] = useState(false);
 
@@ -92,7 +95,7 @@ export default function App() {
    * 从而触发 canvas 重绘 → onRendered 收起遮罩。
    */
   const doHighlight = useCallback(
-    (color: PerlerColor, index: number, th: number) => {
+    (color: PerlerColor, index: number, th: number, dim: number) => {
       if (!originalData) return;
 
       const rgb = toRgb(color);
@@ -106,13 +109,13 @@ export default function App() {
       // 结果为新的 ImageData，必然触发 canvas 重绘 → onRendered 收起遮罩
       renderTimerRef.current = window.setTimeout(() => {
         renderTimerRef.current = null;
-        const result = highlightColor(originalData, rgb, th);
+        const result = highlightColor(originalData, rgb, th, dim / 100);
         setDisplayData(result.imageData);
 
         // 调试信息：用于判断阈值效果
         console.log(
           `[颜色高亮] ${color.code} RGB(${rgb.r}, ${rgb.g}, ${rgb.b})\n` +
-            `Threshold: ${th}\n` +
+            `Threshold: ${th} | DimFactor: ${dim}%\n` +
             `Matched pixels: ${result.matchedPixels}\n` +
             `Total pixels: ${result.totalPixels}\n` +
             `Match ratio: ${((result.matchedPixels / result.totalPixels) * 100).toFixed(2)}%`
@@ -128,22 +131,22 @@ export default function App() {
       const existingIndex = colorList.findIndex((c) => c.code === color.code);
       if (existingIndex >= 0) {
         // 重复色号：不重复加入列表，但仍切换高亮渲染
-        doHighlight(color, existingIndex, threshold);
+        doHighlight(color, existingIndex, threshold, dimPercent);
         return;
       }
       const newIndex = colorList.length;
       setColorList((prev) => [...prev, color]);
-      doHighlight(color, newIndex, threshold);
+      doHighlight(color, newIndex, threshold, dimPercent);
     },
-    [colorList, doHighlight, threshold]
+    [colorList, doHighlight, threshold, dimPercent]
   );
 
   /** 点击已选色号，重新查看高亮 */
   const handleSelectColor = useCallback(
     (index: number) => {
-      doHighlight(colorList[index], index, threshold);
+      doHighlight(colorList[index], index, threshold, dimPercent);
     },
-    [colorList, doHighlight, threshold]
+    [colorList, doHighlight, threshold, dimPercent]
   );
 
   /** 删除已选色号：若删的是当前高亮项则回到原图（同样展示进度遮罩），其余索引顺延 */
@@ -197,6 +200,14 @@ export default function App() {
     setThreshold(value);
   }, []);
 
+  /**
+   * 暗部亮度滑动条回调：仅更新状态，不做实时重渲染（同理避免卡死）。
+   * 新亮度在下次确认色号 / 点击已选色号时生效。
+   */
+  const handleDimChange = useCallback((value: number) => {
+    setDimPercent(value);
+  }, []);
+
   return (
     <div className="app">
       <header className="app-header">
@@ -225,6 +236,13 @@ export default function App() {
           onConfirm={handleConfirm}
           threshold={threshold}
           onThresholdChange={handleThresholdChange}
+          disabled={!originalData || processing || uploading}
+        />
+
+        {/* 渲染设置：宽屏在右侧栏（选择器下方），窄屏在选择器与画布之间 */}
+        <RenderSettings
+          value={dimPercent}
+          onChange={handleDimChange}
           disabled={!originalData || processing || uploading}
         />
 

@@ -1,7 +1,7 @@
 import { type RGB, COLOR_THRESHOLD, rgbDistanceFromChannels } from './colorMatch';
 
-/** 非目标区域亮度系数 */
-const DIM_FACTOR = 0.25;
+/** 非目标区域默认亮度系数（25% 原亮度） */
+export const DEFAULT_DIM_FACTOR = 0.25;
 
 /** 高亮渲染结果 */
 export interface HighlightResult {
@@ -17,7 +17,8 @@ export interface HighlightResult {
 export function highlightColor(
   source: ImageData,
   target: RGB,
-  threshold: number = COLOR_THRESHOLD
+  threshold: number = COLOR_THRESHOLD,
+  dimFactor: number = DEFAULT_DIM_FACTOR
 ): HighlightResult {
   const { width, height } = source;
   const result = new ImageData(width, height);
@@ -38,9 +39,9 @@ export function highlightColor(
       matchedPixels++;
     } else {
       // 非目标区域：降低亮度
-      dst[i] = Math.round(src[i] * DIM_FACTOR);
-      dst[i + 1] = Math.round(src[i + 1] * DIM_FACTOR);
-      dst[i + 2] = Math.round(src[i + 2] * DIM_FACTOR);
+      dst[i] = Math.round(src[i] * dimFactor);
+      dst[i + 1] = Math.round(src[i + 1] * dimFactor);
+      dst[i + 2] = Math.round(src[i + 2] * dimFactor);
     }
     // alpha 通道保持不变
     dst[i + 3] = src[i + 3];

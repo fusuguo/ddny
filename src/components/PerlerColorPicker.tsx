@@ -59,12 +59,12 @@ export default function PerlerColorPicker({
       <h3>选择拼豆颜色</h3>
 
       <div className="picker-row">
-        <label htmlFor="letter-select">字母：</label>
         <select
           id="letter-select"
           value={letter}
           onChange={handleLetterChange}
           disabled={disabled}
+          aria-label="字母"
         >
           {letters.map((l) => (
             <option key={l} value={l}>
@@ -72,15 +72,12 @@ export default function PerlerColorPicker({
             </option>
           ))}
         </select>
-      </div>
-
-      <div className="picker-row">
-        <label htmlFor="number-select">数字：</label>
         <select
           id="number-select"
           value={number}
           onChange={handleNumberChange}
           disabled={disabled}
+          aria-label="数字"
         >
           {numbers.map((n) => (
             <option key={n} value={n}>

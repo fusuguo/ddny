@@ -82,7 +82,8 @@
   grid-template-areas:
     "toolbar toolbar"
     "canvas picker"
-    "panel picker";
+    "canvas settings"
+    "canvas panel";
   align-items: start;
 }
 
@@ -382,6 +383,42 @@
   flex: 1;
   cursor: pointer;
   accent-color: #3498db;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #fff;
+  border: 1px solid #ddd;
+  outline: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3498db;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3498db;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.range-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #fff;
+  border: 1px solid #ddd;
 }
 
 .range-slider:disabled {
@@ -400,6 +437,36 @@
   width: 24px;
   height: 24px;
   border-radius: 4px;
+}
+
+/* 渲染设置（Grid 区域，宽屏占右侧栏选择器下方） */
+.render-settings {
+  grid-area: settings;
+  align-self: start;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.render-settings h3 {
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  color: #2c3e50;
+}
+
+.render-settings-item {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.render-settings-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
 }
 
 /* 控制面板（Grid 区域） */
@@ -527,13 +594,14 @@
   flex-shrink: 0;
 }
 
-/* 响应式：窄屏单列，选择器置于上传栏与画布之间 */
+/* 响应式：窄屏单列，选择器 → 渲染设置 → 画布 → 已选列表 */
 @media (max-width: 768px) {
   .app-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
       "toolbar"
       "picker"
+      "settings"
       "canvas"
       "panel";
   }
