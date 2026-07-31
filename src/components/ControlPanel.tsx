@@ -1,8 +1,18 @@
 import { type PerlerColor } from '../utils/perlerPalette';
 
+/**
+ * 已选颜色列表项：颜色 + 该颜色独立保存的匹配范围。
+ * 确认色号时记录当时的阈值，切换颜色时恢复各自保存的值，互不影响。
+ */
+export interface SelectedColor {
+  color: PerlerColor;
+  /** 确认该色号时保存的颜色匹配范围（阈值） */
+  threshold: number;
+}
+
 interface ControlPanelProps {
   /** 已确认的色号列表 */
-  colorList: PerlerColor[];
+  colorList: SelectedColor[];
   /** 当前正在高亮的颜色索引（-1 表示显示原图） */
   activeIndex: number;
   /** 是否正在处理 */
@@ -58,26 +68,26 @@ export default function ControlPanel({
               </button>
             </li>
 
-            {colorList.map((color, i) => (
-              <li key={`${color.code}-${i}`} className="color-item-wrap">
+            {colorList.map((item, i) => (
+              <li key={`${item.color.code}-${i}`} className="color-item-wrap">
                 <button
                   className={`color-item ${i === activeIndex ? 'active' : ''}`}
                   onClick={() => onSelectColor(i)}
                 >
                   <span
                     className="color-swatch small"
-                    style={{ backgroundColor: color.hex }}
+                    style={{ backgroundColor: item.color.hex }}
                   />
                   <span className="color-label">
-                    {color.code}
-                    <span className="color-hex">RGB: {color.rgb.join(', ')}</span>
+                    {item.color.code}
+                    <span className="color-hex">RGB: {item.color.rgb.join(', ')}</span>
                   </span>
                 </button>
                 <button
                   className="color-delete"
                   onClick={() => onDeleteColor(i)}
                   title="删除该颜色"
-                  aria-label={`删除 ${color.code}`}
+                  aria-label={`删除 ${item.color.code}`}
                 >
                   ✕
                 </button>

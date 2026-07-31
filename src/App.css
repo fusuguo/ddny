@@ -257,6 +257,17 @@
   border-radius: 8px;
 }
 
+/* 可点击上传状态（仅初始未上传时） */
+.canvas-placeholder--clickable {
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.canvas-placeholder--clickable:hover {
+  border-color: #3498db;
+  background: #f0f8ff;
+}
+
 .canvas-placeholder .hint {
   font-size: 0.8rem;
   margin-top: 8px;
@@ -433,6 +444,53 @@
   line-height: 1.4;
 }
 
+/* 逐档加减按钮行（位于滑动条与说明文字之间） */
+.step-btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.step-btn {
+  width: 36px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  color: #2c3e50;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.step-btn:hover:not(:disabled) {
+  border-color: #3498db;
+  background: #ebf5fb;
+}
+
+.step-btn:active:not(:disabled) {
+  background: #d6eaf8;
+}
+
+.step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 小号加减按钮（描边宽度输入框外侧，始终可见，方便移动端） */
+.step-btn--sm {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
 .color-swatch.small {
   width: 24px;
   height: 24px;
@@ -467,6 +525,139 @@
   font-weight: 600;
   color: #2c3e50;
   margin-bottom: 10px;
+}
+
+/* 色块描边设置 */
+.outline-settings {
+  margin-top: 10px;
+}
+
+.outline-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.outline-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3498db;
+  cursor: pointer;
+}
+
+.outline-options {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.outline-options-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.outline-width-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.outline-option-label {
+  font-size: 0.85rem;
+  color: #555;
+  flex-shrink: 0;
+}
+
+.outline-width-input {
+  width: 56px;
+  padding: 5px 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  background: #fff;
+  color: #2c3e50;
+}
+
+.outline-width-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.15);
+}
+
+.outline-width-input:disabled {
+  background: #f0f0f0;
+  cursor: not-allowed;
+}
+
+/* 隐藏数字输入框原生上下箭头（由外侧 −/+ 按钮替代，移动端更易操作） */
+.outline-width-input::-webkit-inner-spin-button,
+.outline-width-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.outline-width-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.outline-width-unit {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.outline-color-row {
+  margin-top: 10px;
+}
+
+.outline-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.outline-color-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.outline-color-btn:hover {
+  border-color: #3498db;
+}
+
+.outline-color-btn.active {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  background: #ebf5fb;
+}
+
+.outline-color-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.outline-color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.outline-color-name {
+  font-size: 0.78rem;
+  color: #2c3e50;
+  white-space: nowrap;
 }
 
 /* 控制面板（Grid 区域） */

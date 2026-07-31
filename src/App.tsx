@@ -1,12 +1,22 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import ImageUploader from './components/ImageUploader';
 import ImageCanvas from './components/ImageCanvas';
 import PerlerColorPicker from './components/PerlerColorPicker';
-import RenderSettings from './components/RenderSettings';
-import ControlPanel from './components/ControlPanel';
+import RenderSettings, { DEFAULT_DIM_PERCENT } from './components/RenderSettings';
+import ControlPanel, { type SelectedColor } from './components/ControlPanel';
 import ProgressOverlay from './components/ProgressOverlay';
-import { type RGB, COLOR_THRESHOLD } from './utils/colorMatch';
+import DebugSettings from './components/DebugSettings';
+import { DEFAULT_THRESHOLD } from './components/MatchRangeSlider';
+import { type RGB } from './utils/colorMatch';
 import { getImageDataFromImage, highlightColor } from './utils/imageProcess';
+import {
+  type MaskHoleFillMode,
+  DEFAULT_CLOSING_RADIUS,
+  DEFAULT_HOLE_FILL_MODE,
+  DEFAULT_OUTLINE_ENABLED,
+  DEFAULT_OUTLINE_WIDTH,
+  DEFAULT_OUTLINE_COLOR,
+} from './utils/maskProcessor';
 import { type PerlerColor } from './utils/perlerPalette';
 import './App.css';
 
@@ -19,18 +29,37 @@ export default function App() {
   const [originalData, setOriginalData] = useState<ImageData | null>(null);
   /** 当前显示的像素数据 */
   const [displayData, setDisplayData] = useState<ImageData | null>(null);
-  /** 已确认的色号列表 */
-  const [colorList, setColorList] = useState<PerlerColor[]>([]);
+  /** 已确认的色号列表（每项独立保存匹配范围） */
+  const [colorList, setColorList] = useState<SelectedColor[]>([]);
   /** 当前高亮的颜色索引，-1 = 原图 */
   const [activeIndex, setActiveIndex] = useState(-1);
   /** 是否正在处理 */
   const [processing, setProcessing] = useState(false);
-  /** 颜色匹配阈值（默认 20，可滑动调节） */
-  const [threshold, setThreshold] = useState(COLOR_THRESHOLD);
-  /** 背景亮度百分比（10~90，默认 75） */
-  const [dimPercent, setDimPercent] = useState(75);
+  /** 颜色匹配阈值（10 档固定调节，默认 DEFAULT_THRESHOLD） */
+  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
+  /** 背景亮度百分比（10 档固定调节，默认 DEFAULT_DIM_PERCENT，实时生效） */
+  const [dimPercent, setDimPercent] = useState(DEFAULT_DIM_PERCENT);
   /** 是否正在上传/加载图纸（暂停态） */
   const [uploading, setUploading] = useState(false);
+  /** 是否已触发过上传（首次上传后 canvas 占位区不再支持点击上传） */
+  const [hasEverUploaded, setHasEverUploaded] = useState(false);
+
+  /** “打开文件选择器”函数 ref：由 ImageUploader 注册，供 canvas 占位区点击触发 */
+  const openPickerRef = useRef<(() => void) | null>(null);
+
+  /* ---- 开发者调试设置（默认值保证普通用户体验不变） ---- */
+  /** Debug 模式开关（默认关闭） */
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  /** mask 填洞算法模式（默认 Morphology Closing） */
+  const [maskMode, setMaskMode] = useState<MaskHoleFillMode>(DEFAULT_HOLE_FILL_MODE);
+  /** 闭运算半径（默认 DEFAULT_CLOSING_RADIUS） */
+  const [closingRadius, setClosingRadius] = useState(DEFAULT_CLOSING_RADIUS);
+  /** 色块描边开关（默认开启，渲染设置中控制） */
+  const [outlineEnabled, setOutlineEnabled] = useState(DEFAULT_OUTLINE_ENABLED);
+  /** 描边宽度（0~5 px，默认 1，0 = 关闭描边效果） */
+  const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH);
+  /** 描边颜色（hex，默认红色 #FF0000） */
+  const [outlineColor, setOutlineColor] = useState(DEFAULT_OUTLINE_COLOR);
 
   /** 当前显示数据 ref：用于判断“目标数据已在展示”，避免遮罩永不收起 */
   const displayDataRef = useRef<ImageData | null>(null);
@@ -51,6 +80,7 @@ export default function App() {
   const handleUploadStart = useCallback(() => {
     cancelPendingRender();
     setProcessing(false);
+    setHasEverUploaded(true);
     // 关键：立即解除旧图原图与当前显示数据的引用。
     // 重新上传卡死的根因是“旧图未释放 + 新图已分配”使内存峰值翻倍（out of memory）；
     // 在选定文件时（与像素提取相隔多个事件循环，GC 有机会回收）就解除引用，
@@ -87,6 +117,26 @@ export default function App() {
   }, []);
 
   /**
+   * 高亮渲染核心计算（纯函数调用，不涉及 UI 状态）。
+   * doHighlight（带過度遮罩）与描边实时刷新（无遮罩）共用。
+   */
+  const computeHighlight = useCallback(
+    (color: PerlerColor, th: number, dim: number, olEnabled: boolean, olWidth: number, olColor: string) => {
+      if (!originalData) return null;
+      const rgb = toRgb(color);
+      return highlightColor(originalData, rgb, th, dim / 100, {
+        closingRadius,
+        holeFillMode: maskMode,
+        debug: debugEnabled,
+        outlineEnabled: olEnabled,
+        outlineWidth: olWidth,
+        outlineColor: olColor,
+      });
+    },
+    [originalData, toRgb, closingRadius, maskMode, debugEnabled]
+  );
+
+  /**
    * 执行高亮渲染（每次实时计算，不缓存结果——计算本身不费时，
    * 缓存多份全尺寸 ImageData 反而占用大量内存）。
    * putImageData（把像素绘制到 canvas）是真正耗时的步骤，
@@ -98,8 +148,6 @@ export default function App() {
     (color: PerlerColor, index: number, th: number, dim: number) => {
       if (!originalData) return;
 
-      const rgb = toRgb(color);
-
       // 取消上一次待执行的渲染，避免过期结果覆盖本次
       cancelPendingRender();
       setActiveIndex(index);
@@ -109,44 +157,55 @@ export default function App() {
       // 结果为新的 ImageData，必然触发 canvas 重绘 → onRendered 收起遮罩
       renderTimerRef.current = window.setTimeout(() => {
         renderTimerRef.current = null;
-        const result = highlightColor(originalData, rgb, th, dim / 100);
+        const result = computeHighlight(color, th, dim, outlineEnabled, outlineWidth, outlineColor);
+        if (!result) return;
         setDisplayData(result.imageData);
 
-        // 调试信息：用于判断阈值效果
+        // 调试信息：用于判断阈值效果与 mask 后处理效果
+        const ms = result.maskStats;
+        const ol = result.outline;
         console.log(
-          `[颜色高亮] ${color.code} RGB(${rgb.r}, ${rgb.g}, ${rgb.b})\n` +
+          `[颜色高亮] ${color.code} RGB(${toRgb(color).r}, ${toRgb(color).g}, ${toRgb(color).b})\n` +
             `Threshold: ${th} | DimFactor: ${dim}%\n` +
             `Matched pixels: ${result.matchedPixels}\n` +
             `Total pixels: ${result.totalPixels}\n` +
-            `Match ratio: ${((result.matchedPixels / result.totalPixels) * 100).toFixed(2)}%`
+            `Match ratio: ${((result.matchedPixels / result.totalPixels) * 100).toFixed(2)}%\n` +
+            `[mask 后处理] 算法: ${ms?.algorithm ?? '-'} | Closing Radius: ${ms?.closingRadius ?? '-'}\n` +
+            `删除噪点: ${ms?.removedComponents ?? 0} 个区域 / ${ms?.removedNoisePixels ?? 0} 像素 | 填洞: ${ms?.filledHolePixels ?? 0} 像素 | 最终 true: ${ms?.finalTruePixels ?? 0}\n` +
+            `[色块描边] ${ol ? `开启 | 宽度 ${ol.strokeWidth}px | 颜色 ${outlineColor} RGB(${ol.borderColor.r}, ${ol.borderColor.g}, ${ol.borderColor.b}) | 边界 ${ol.boundaryPixels} 像素` : '关闭'}`
         );
       }, 100);
     },
-    [originalData, toRgb, cancelPendingRender]
+    [originalData, computeHighlight, cancelPendingRender, outlineEnabled, outlineWidth, outlineColor, toRgb]
   );
 
-  /** 确认选择色号：去重后加入列表并触发高亮 */
+  /** 确认选择色号：去重后加入列表（同时保存当前匹配范围）并触发高亮 */
   const handleConfirm = useCallback(
     (color: PerlerColor) => {
-      const existingIndex = colorList.findIndex((c) => c.code === color.code);
+      const existingIndex = colorList.findIndex((item) => item.color.code === color.code);
       if (existingIndex >= 0) {
-        // 重复色号：不重复加入列表，但仍切换高亮渲染
+        // 重复色号：不重复加入列表，但更新其保存的匹配范围并切换高亮渲染
+        setColorList((prev) =>
+          prev.map((item, i) => (i === existingIndex ? { ...item, threshold } : item))
+        );
         doHighlight(color, existingIndex, threshold, dimPercent);
         return;
       }
       const newIndex = colorList.length;
-      setColorList((prev) => [...prev, color]);
+      setColorList((prev) => [...prev, { color, threshold }]);
       doHighlight(color, newIndex, threshold, dimPercent);
     },
     [colorList, doHighlight, threshold, dimPercent]
   );
 
-  /** 点击已选色号，重新查看高亮 */
+  /** 点击已选色号：恢复该颜色独立保存的匹配范围，并重新查看高亮 */
   const handleSelectColor = useCallback(
     (index: number) => {
-      doHighlight(colorList[index], index, threshold, dimPercent);
+      const item = colorList[index];
+      setThreshold(item.threshold);
+      doHighlight(item.color, index, item.threshold, dimPercent);
     },
-    [colorList, doHighlight, threshold, dimPercent]
+    [colorList, doHighlight, dimPercent]
   );
 
   /** 删除已选色号：若删的是当前高亮项则回到原图（同样展示进度遮罩），其余索引顺延 */
@@ -201,15 +260,70 @@ export default function App() {
   }, []);
 
   /**
-   * 暗部亮度滑动条回调：仅更新状态，不做实时重渲染（同理避免卡死）。
-   * 新亮度在下次确认色号 / 点击已选色号时生效。
+   * 背景亮度回调：更新状态后由下方 effect 实时重新渲染当前高亮。
+   * 10 档固定调节 + 30ms 防抖定时器，避免连续拖动时重复计算堆积。
    */
   const handleDimChange = useCallback((value: number) => {
     setDimPercent(value);
   }, []);
 
+  /* ---- 渲染参数实时刷新：修改描边开关/宽度/颜色或背景亮度后，
+         立即重新渲染当前高亮结果（不重跑识别、不显示进度遮罩） ---- */
+
+  /** 最新渲染上下文 ref：供实时刷新 effect 读取当前高亮状态 */
+  const renderContextRef = useRef({ activeIndex, colorList, dimPercent, computeHighlight });
+  renderContextRef.current = { activeIndex, colorList, dimPercent, computeHighlight };
+
+  /** 上一次渲染参数值：用于区分“真实变更”与“初次挂载” */
+  const prevRenderParamsRef = useRef({
+    enabled: outlineEnabled, width: outlineWidth, color: outlineColor, dim: dimPercent,
+  });
+
+  useEffect(() => {
+    const prev = prevRenderParamsRef.current;
+    prevRenderParamsRef.current = {
+      enabled: outlineEnabled, width: outlineWidth, color: outlineColor, dim: dimPercent,
+    };
+    // 初次挂载或未变更：跳过
+    if (
+      prev.enabled === outlineEnabled && prev.width === outlineWidth &&
+      prev.color === outlineColor && prev.dim === dimPercent
+    ) return;
+
+    const ctx = renderContextRef.current;
+    if (ctx.activeIndex < 0 || !ctx.colorList[ctx.activeIndex]) return;
+
+    // 取消待执行的渲染，短延迟后重新计算（不显示进度遮罩，保持 UI 响应）。
+    // 阈值使用该颜色独立保存的值（而非滑动条当前值），确保仅变更本次修改的参数
+    cancelPendingRender();
+    renderTimerRef.current = window.setTimeout(() => {
+      renderTimerRef.current = null;
+      const item = ctx.colorList[ctx.activeIndex];
+      const result = ctx.computeHighlight(
+        item.color,
+        item.threshold,
+        ctx.dimPercent,
+        outlineEnabled,
+        outlineWidth,
+        outlineColor
+      );
+      if (result) setDisplayData(result.imageData);
+    }, 30);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outlineEnabled, outlineWidth, outlineColor, dimPercent, cancelPendingRender]);
+
   return (
     <div className="app">
+      {/* 开发者调试设置：右上角浮动按钮 + 面板（默认关闭，不影响普通用户） */}
+      <DebugSettings
+        debugEnabled={debugEnabled}
+        onDebugEnabledChange={setDebugEnabled}
+        maskMode={maskMode}
+        onMaskModeChange={setMaskMode}
+        closingRadius={closingRadius}
+        onClosingRadiusChange={setClosingRadius}
+      />
+
       <header className="app-header">
         <h1>
           <img className="app-logo" src="/icon.png" alt="豆豆你呀" />
@@ -225,6 +339,7 @@ export default function App() {
             onUploadStart={handleUploadStart}
             onUploadError={handleUploadError}
             disabled={uploading}
+            openPickerRef={openPickerRef}
           />
           {originalData && !processing && !uploading && (
             <span className="pick-hint">💡 选择拼豆色号并确认，即可高亮对应颜色区域</span>
@@ -243,6 +358,12 @@ export default function App() {
         <RenderSettings
           value={dimPercent}
           onChange={handleDimChange}
+          outlineEnabled={outlineEnabled}
+          onOutlineEnabledChange={setOutlineEnabled}
+          outlineWidth={outlineWidth}
+          onOutlineWidthChange={setOutlineWidth}
+          outlineColor={outlineColor}
+          onOutlineColorChange={setOutlineColor}
           disabled={!originalData || processing || uploading}
         />
 
@@ -259,8 +380,13 @@ export default function App() {
           <ImageCanvas
             originalData={originalData}
             displayData={displayData}
-            activeColor={activeIndex >= 0 ? colorList[activeIndex] ?? null : null}
+            activeColor={activeIndex >= 0 ? colorList[activeIndex]?.color ?? null : null}
             onRendered={handleCanvasRendered}
+            onPlaceholderClick={
+              !hasEverUploaded && !uploading
+                ? () => openPickerRef.current?.()
+                : undefined
+            }
           />
         </div>
 

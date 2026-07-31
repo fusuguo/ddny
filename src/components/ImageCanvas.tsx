@@ -11,6 +11,8 @@ interface ImageCanvasProps {
   activeColor: PerlerColor | null;
   /** Canvas 绘制完成回调（用于精确控制进度遮罩的收起时机） */
   onRendered?: () => void;
+  /** 占位区点击上传回调（仅首次未上传时提供，传入后占位区可点击触发上传） */
+  onPlaceholderClick?: () => void;
 }
 
 const ZOOM_MIN = 0.5;
@@ -25,6 +27,7 @@ export default function ImageCanvas({
   displayData,
   activeColor,
   onRendered,
+  onPlaceholderClick,
 }: ImageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   /** 缩放倍率：1 = 适应容器宽度 */
@@ -52,9 +55,14 @@ export default function ImageCanvas({
 
   if (!displayData) {
     return (
-      <div className="canvas-placeholder">
+      <div
+        className={`canvas-placeholder${onPlaceholderClick ? ' canvas-placeholder--clickable' : ''}`}
+        onClick={onPlaceholderClick}
+        role={onPlaceholderClick ? 'button' : undefined}
+        aria-label={onPlaceholderClick ? '点击上传拼豆图纸图片' : undefined}
+      >
         <p>请先上传拼豆图纸图片</p>
-        <p className="hint">支持 JPG / PNG 格式</p>
+        <p className="hint">支持 JPG / PNG 格式{onPlaceholderClick ? '，点击此处直接上传' : ''}</p>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface ImageUploaderProps {
   onImageLoad: (img: HTMLImageElement) => void;
@@ -8,6 +8,8 @@ interface ImageUploaderProps {
   onUploadError?: () => void;
   /** 禁用状态（加载中暂停） */
   disabled?: boolean;
+  /** 暴露“打开文件选择器”函数（供 canvas 占位区点击上传使用） */
+  openPickerRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 /**
@@ -18,8 +20,17 @@ export default function ImageUploader({
   onUploadStart,
   onUploadError,
   disabled,
+  openPickerRef,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // 注册“打开文件选择器”函数，供外部（canvas 占位区）触发上传
+  useEffect(() => {
+    if (openPickerRef) {
+      openPickerRef.current = () => inputRef.current?.click();
+      return () => { openPickerRef.current = null; };
+    }
+  }, [openPickerRef]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
