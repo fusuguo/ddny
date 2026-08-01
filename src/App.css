@@ -785,6 +785,21 @@
   flex-shrink: 0;
 }
 
+/* 底部开源声明 */
+.app-footer {
+  margin-top: 32px;
+  padding: 16px 0;
+  text-align: center;
+  border-top: 1px solid #eee;
+}
+
+.app-footer p {
+  margin: 4px 0;
+  font-size: 0.78rem;
+  color: #95a5a6;
+  line-height: 1.5;
+}
+
 /* 响应式：窄屏单列，选择器 → 渲染设置 → 画布 → 已选列表 */
 @media (max-width: 768px) {
   .app-layout {

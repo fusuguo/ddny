@@ -400,6 +400,11 @@ export default function App() {
           onDeleteColor={handleDeleteColor}
         />
       </div>
+
+      <footer className="app-footer">
+        <p>豆豆你呀 · 开源拼豆工具</p>
+        <p>Source Code licensed under AGPL-3.0. "豆豆你呀" name and logo are protected brand assets.</p>
+      </footer>
     </div>
   );
 }
