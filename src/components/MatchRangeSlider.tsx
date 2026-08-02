@@ -55,6 +55,15 @@ export default function MatchRangeSlider({
       <h3>颜色匹配范围</h3>
       <div className="range-row">
         <span className="range-end">精确</span>
+        <button
+          type="button"
+          className="step-btn"
+          onClick={() => step(-1)}
+          disabled={disabled || levelIndex <= 0}
+          aria-label="缩小匹配范围（更精确）"
+        >
+          −
+        </button>
         <input
           type="range"
           className="range-slider"
@@ -66,18 +75,6 @@ export default function MatchRangeSlider({
           disabled={disabled}
           aria-label="颜色匹配范围"
         />
-        <span className="range-end">宽松</span>
-      </div>
-      <div className="step-btn-row">
-        <button
-          type="button"
-          className="step-btn"
-          onClick={() => step(-1)}
-          disabled={disabled || levelIndex <= 0}
-          aria-label="缩小匹配范围（更精确）"
-        >
-          −
-        </button>
         <button
           type="button"
           className="step-btn"
@@ -87,8 +84,9 @@ export default function MatchRangeSlider({
         >
           +
         </button>
+        <span className="range-end">宽松</span>
       </div>
-      <p className="range-hint">精确：颜色更接近才高亮；宽松：更多相似颜色会被高亮</p>
+      <p className="range-hint">精确：颜色更接近会被高亮；<br />宽松：更多相似颜色会被高亮</p>
     </div>
   );
 }

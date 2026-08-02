@@ -89,6 +89,15 @@ export default function RenderSettings({
         <label className="render-settings-label">背景亮度</label>
         <div className="range-row">
           <span className="range-end">暗</span>
+          <button
+            type="button"
+            className="step-btn"
+            onClick={() => stepDim(-1)}
+            disabled={disabled || dimIndex <= 0}
+            aria-label="背景调暗"
+          >
+            −
+          </button>
           <input
             type="range"
             className="range-slider"
@@ -100,18 +109,6 @@ export default function RenderSettings({
             disabled={disabled}
             aria-label="背景亮度"
           />
-          <span className="range-end">亮</span>
-        </div>
-        <div className="step-btn-row">
-          <button
-            type="button"
-            className="step-btn"
-            onClick={() => stepDim(-1)}
-            disabled={disabled || dimIndex <= 0}
-            aria-label="背景调暗"
-          >
-            −
-          </button>
           <button
             type="button"
             className="step-btn"
@@ -121,8 +118,9 @@ export default function RenderSettings({
           >
             +
           </button>
+          <span className="range-end">亮</span>
         </div>
-        <p className="range-hint">暗：目标颜色更突出，其他区域更弱化；亮：保留更多原图色彩</p>
+        <p className="range-hint">暗：目标颜色更突出，其他区域更弱化；<br />亮：保留更多原图色彩</p>
       </div>
 
       {/* 色块描边设置 */}

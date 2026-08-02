@@ -6,6 +6,7 @@ import {
   findByCode,
 } from '../utils/perlerPalette';
 import MatchRangeSlider from './MatchRangeSlider';
+import Dropdown from './Dropdown';
 
 interface PerlerColorPickerProps {
   /** 确认选择回调，传出完整色号数据 */
@@ -34,20 +35,31 @@ export default function PerlerColorPicker({
   const numbers = useMemo(() => getNumbersForLetter(letter), [letter]);
   const [number, setNumber] = useState(numbers[0] ?? 1);
 
+  /** 字母下拉选项 */
+  const letterOptions = useMemo(
+    () => letters.map((l) => ({ value: l, label: l })),
+    [letters]
+  );
+  /** 数字下拉选项 */
+  const numberOptions = useMemo(
+    () => numbers.map((n) => ({ value: n, label: String(n) })),
+    [numbers]
+  );
+
   // 组合色号并查找色板数据
   const code = `${letter}${number}`;
   const current = findByCode(code);
 
   /** 切换字母时，重置数字为该字母下的第一个编号 */
-  const handleLetterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLetter = e.target.value;
+  const handleLetterChange = (v: string | number) => {
+    const newLetter = String(v);
     setLetter(newLetter);
     const newNumbers = getNumbersForLetter(newLetter);
     setNumber(newNumbers[0] ?? 1);
   };
 
-  const handleNumberChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setNumber(parseInt(e.target.value, 10));
+  const handleNumberChange = (v: string | number) => {
+    setNumber(Number(v));
   };
 
   const handleConfirm = () => {
@@ -59,32 +71,20 @@ export default function PerlerColorPicker({
       <h3>选择拼豆颜色</h3>
 
       <div className="picker-row">
-        <select
-          id="letter-select"
+        <Dropdown
           value={letter}
           onChange={handleLetterChange}
+          options={letterOptions}
           disabled={disabled}
-          aria-label="字母"
-        >
-          {letters.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </select>
-        <select
-          id="number-select"
+          ariaLabel="字母"
+        />
+        <Dropdown
           value={number}
           onChange={handleNumberChange}
+          options={numberOptions}
           disabled={disabled}
-          aria-label="数字"
-        >
-          {numbers.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
+          ariaLabel="数字"
+        />
       </div>
 
       <div className="picker-preview">
@@ -111,7 +111,7 @@ export default function PerlerColorPicker({
         onClick={handleConfirm}
         disabled={disabled || !current}
       >
-        ✅ 确认选择
+        💅 确认选择
       </button>
     </div>
   );

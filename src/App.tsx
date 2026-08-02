@@ -5,7 +5,7 @@ import PerlerColorPicker from './components/PerlerColorPicker';
 import RenderSettings, { DEFAULT_DIM_PERCENT } from './components/RenderSettings';
 import ControlPanel, { type SelectedColor } from './components/ControlPanel';
 import ProgressOverlay from './components/ProgressOverlay';
-import DebugSettings from './components/DebugSettings';
+// import DebugSettings from './components/DebugSettings';
 import { DEFAULT_THRESHOLD } from './components/MatchRangeSlider';
 import { type RGB } from './utils/colorMatch';
 import { getImageDataFromImage, highlightColor } from './utils/imageProcess';
@@ -49,11 +49,11 @@ export default function App() {
 
   /* ---- 开发者调试设置（默认值保证普通用户体验不变） ---- */
   /** Debug 模式开关（默认关闭） */
-  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [debugEnabled, _setDebugEnabled] = useState(false);
   /** mask 填洞算法模式（默认 Morphology Closing） */
-  const [maskMode, setMaskMode] = useState<MaskHoleFillMode>(DEFAULT_HOLE_FILL_MODE);
+  const [maskMode, _setMaskMode] = useState<MaskHoleFillMode>(DEFAULT_HOLE_FILL_MODE);
   /** 闭运算半径（默认 DEFAULT_CLOSING_RADIUS） */
-  const [closingRadius, setClosingRadius] = useState(DEFAULT_CLOSING_RADIUS);
+  const [closingRadius, _setClosingRadius] = useState(DEFAULT_CLOSING_RADIUS);
   /** 色块描边开关（默认开启，渲染设置中控制） */
   const [outlineEnabled, setOutlineEnabled] = useState(DEFAULT_OUTLINE_ENABLED);
   /** 描边宽度（0~5 px，默认 1，0 = 关闭描边效果） */
@@ -314,20 +314,20 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* 开发者调试设置：右上角浮动按钮 + 面板（默认关闭，不影响普通用户） */}
-      <DebugSettings
+      {/* 开发者调试设置（暂时隐藏） */}
+      {/* <DebugSettings
         debugEnabled={debugEnabled}
         onDebugEnabledChange={setDebugEnabled}
         maskMode={maskMode}
         onMaskModeChange={setMaskMode}
         closingRadius={closingRadius}
         onClosingRadiusChange={setClosingRadius}
-      />
+      /> */}
 
       <header className="app-header">
         <h1>
-          <img className="app-logo" src="/icon.png" alt="豆豆你呀" />
-          豆豆你呀 - 拼豆图纸颜色高亮工具
+          <img className="app-logo" src={`${import.meta.env.BASE_URL}icon.png`} alt="豆豆你呀" />
+          豆豆你呀 - 拼豆图纸颜色高亮
         </h1>
         <p className="subtitle">上传图片 → 选择色号 → 确认高亮 → 循环选择</p>
       </header>

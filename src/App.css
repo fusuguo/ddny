@@ -303,19 +303,91 @@
   min-width: 44px;
 }
 
-.picker-row select {
+/* 自定义下拉选择器（替代原生 select，避免移动端全屏系统选择界面） */
+.dropdown {
+  position: relative;
   flex: 1;
+  min-width: 0;
+}
+
+.dropdown-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   padding: 6px 8px;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 0.9rem;
   background: #fff;
+  color: #2c3e50;
   cursor: pointer;
+  transition: border-color 0.15s;
 }
 
-.picker-row select:disabled {
+.dropdown-trigger:hover:not(:disabled) {
+  border-color: #3498db;
+}
+
+.dropdown-trigger:disabled {
   background: #f0f0f0;
   cursor: not-allowed;
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem;
+  color: #888;
+  transition: transform 0.2s;
+}
+
+.dropdown--open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+}
+
+.dropdown--open .dropdown-list {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.dropdown-item {
+  padding: 7px 10px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dropdown-item:hover {
+  background: #ebf5fb;
+}
+
+.dropdown-item.active {
+  background: #d6eaf8;
+  font-weight: 600;
+  color: #2980b9;
 }
 
 .picker-preview {
@@ -381,7 +453,7 @@
 .range-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .range-end {
@@ -392,6 +464,7 @@
 
 .range-slider {
   flex: 1;
+  min-width: 0;
   cursor: pointer;
   accent-color: #3498db;
   -webkit-appearance: none;
@@ -444,17 +517,11 @@
   line-height: 1.4;
 }
 
-/* 逐档加减按钮行（位于滑动条与说明文字之间） */
-.step-btn-row {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 8px;
-}
-
+/* 逐档加减按钮（位于滑动条两侧） */
 .step-btn {
-  width: 36px;
-  height: 28px;
+  width: 32px;
+  height: 26px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
